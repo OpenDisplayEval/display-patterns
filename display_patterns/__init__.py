@@ -16,18 +16,26 @@ if TYPE_CHECKING:
         ROI,
         ColorRangeError,
         PanelGeometry,
+        ZonePlateGeometry,
+        ZonePlateScale,
         checkerboard,
         decode_counter,
         render_counter_panel,
+        zone_plate,
+        zone_plate_scale,
     )
 
 __all__ = [
     "ROI",
     "ColorRangeError",
     "PanelGeometry",
+    "ZonePlateGeometry",
+    "ZonePlateScale",
     "checkerboard",
     "decode_counter",
     "render_counter_panel",
+    "zone_plate",
+    "zone_plate_scale",
 ]
 
 

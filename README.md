@@ -3,8 +3,8 @@
 **Deterministic display test patterns, device-free and exact.**
 
 Test-pattern math tends to live trapped inside device tools. This
-library is the importable version: solid fields, checkerboards,
-charts, and machine-readable temporal-alignment patterns, rendered as
+library is the importable version: solid fields, checkerboards, zone
+plates, charts, and machine-readable temporal-alignment patterns, rendered as
 pure functions of their parameters and a frame index. Integer
 patterns deliver exact code values at a stated bit depth — the
 property measurement work depends on — and the render path never
@@ -76,6 +76,25 @@ The counter carries 1 to 31 bits and wraps at `2**bits` — 31 bits runs
 over a year at 60 Hz. Pass the frame index as a zero-dimensional array
 rather than a Python integer when compiling (see below).
 
+Render a zone plate to find out whether a chain resamples the picture,
+and by how much. The plate's rings tighten from the centre to one pixel
+per half-cycle at the edge of the largest circle the frame holds. A
+scaler cannot carry the outer rings, so it folds them into moiré, and
+`zone_plate_scale` reads the fold back from a capture as a scale per
+axis:
+
+```python
+from display_patterns import ZonePlateGeometry, zone_plate, zone_plate_scale
+
+geometry = ZonePlateGeometry.for_frame(width=3840, height=2160)
+plate = zone_plate(geometry)  # float32 [0, 1], HWC; mid-grey outside the circle
+zone_plate_scale(capture, geometry)  # ZonePlateScale(horizontal=0.5, vertical=0.5)
+```
+
+An untouched chain reads 1.0 on both axes, and so does one that only
+enlarges the picture. Near half scale, a scaler with no antialiasing can
+read as `1 - s`, because there the fold lands on the plate itself.
+
 ## Backends
 
 Every core pattern renders through the `xp` namespace with an optional
@@ -126,8 +145,10 @@ write_chart_tiff("my_chart.tiff", image, layout)
 
 - `display_patterns` / `display_patterns.patterns` — the core catalog:
   `checkerboard` (one color renders a solid), `ROI`, `ColorRangeError`,
-  and the temporal-alignment counter panel (`PanelGeometry`,
-  `render_counter_panel`, `decode_counter`). The root is the canonical
+  the temporal-alignment counter panel (`PanelGeometry`,
+  `render_counter_panel`, `decode_counter`), and the zone plate
+  (`ZonePlateGeometry`, `zone_plate`, `zone_plate_scale`,
+  `ZonePlateScale`). The root is the canonical
   import surface; no dependency beyond numpy — torch renders through
   the `xp` parameter without ever being required.
 - `display_patterns.image_generators` — legacy class surface

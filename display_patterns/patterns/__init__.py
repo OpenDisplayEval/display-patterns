@@ -36,12 +36,22 @@ from display_patterns.patterns._fills import (
     ColorRangeError,
     checkerboard,
 )
+from display_patterns.patterns._zone_plate import (
+    ZonePlateGeometry,
+    ZonePlateScale,
+    zone_plate,
+    zone_plate_scale,
+)
 
 __all__ = [
     "ROI",
     "ColorRangeError",
     "PanelGeometry",
+    "ZonePlateGeometry",
+    "ZonePlateScale",
     "checkerboard",
     "decode_counter",
     "render_counter_panel",
+    "zone_plate",
+    "zone_plate_scale",
 ]

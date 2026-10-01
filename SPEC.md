@@ -111,6 +111,17 @@ The core catalog, renderable with numpy alone (§req:success-criteria):
   survive a lossy chain (§req:success-criteria). Ported from a
   renderer's alignment-probe math, which retires its bespoke node in
   favor of generic primitives.
+- **Zone plate** — a circular chirp whose frequency rises from zero at
+  the centre to Nyquist on the largest inscribed circle, mid-grey
+  outside it, with a measurement that reads from a capture the raster
+  scale a chain resampled the frame through, per axis. A scaler folds
+  the band it cannot carry, and demodulating the capture by the plate's
+  own phase turns every fold into a tone at the scaler's sampling rate,
+  so the scale is a spectral peak rather than a threshold on blur
+  (§req:user-stories). A capture sampled once per pixel cannot tell a
+  scale `s` from `1 - s`; whether the plate survived between the two
+  decides, which is least certain near half scale for a scaler that
+  does not filter.
 
 The `charts` extra adds chart production (§req:user-stories): a chart
 is authored as a YAML patch list carrying colorimetric values,
@@ -123,7 +134,7 @@ with no dependencies beyond the array namespace, and its decoder is
 the library's distinguishing measurement feature — a machine-readable
 pattern, not just a visible one.
 
-Catalog growth (motion material, PLUGE, ramps, zone plates) enters as
+Catalog growth (motion material, PLUGE, ramps) enters as
 consumers need it (§req:priorities); each entry follows the rendering
 model and carries a decode side when one is meaningful.
 

@@ -24,6 +24,9 @@ answers how the chain resized the picture, on each axis (§spec:catalog):
 - The **raster label** names the frame size the chart was rendered at,
   so a chain whose output format differs reads its factor from the two.
 
+Each element carries a caption, and a legend in the top-left corner
+says how to read them.
+
 Value and layout conventions (§spec:render-model): a float pattern,
 ``(height, width, 3)`` float32 in [0, 1], achromatic.
 """
@@ -50,10 +53,12 @@ RULER_SCALES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 _SWEEP_TOP = 0.45
 
 # The layout, as fractions of the frame's width (X) and height (Y).
-_LADDER_TOP_X = 0.20
-_LADDER_LEFT_Y = 0.20
-_LADDER_LENGTH_X = 0.03
-_LADDER_LENGTH_Y = 0.03
+# A ladder sits inside the part of the frame its largest zoom keeps
+# (the middle two-thirds at 1.5x), or that zoom would crop it away.
+_LADDER_TOP_X = 0.175
+_LADDER_LEFT_Y = 0.18
+_LADDER_LENGTH_X = 0.08
+_LADDER_LENGTH_Y = 0.07
 _BEAT_X = (0.31, 0.97)
 _BEAT_Y = (0.03, 0.155)
 _BEAT_STRIP_Y = 0.025
@@ -69,6 +74,17 @@ _VERTICAL_RULER_X = 0.86
 _VERTICAL_RULER_Y = (0.24, 0.84)
 _VERTICAL_RULER_TICK_X = 0.01
 _VERTICAL_RULER_BAND_X = 0.025
+
+# How to read the chart, one line per element, in the top-left corner.
+# The corner is the first thing a zoom crops, which costs nothing: the
+# legend is read on an unscaled chain.
+LEGEND = (
+    "ZOOM: LAST RUNG IN VIEW",
+    "UPSCALE: COMB MATCHING THE BANDS",
+    "DOWNSCALE: TICK WHERE STRIPES FADE",
+    "GRID: CELL SIZE IN PIXELS",
+    "VIEW AT 1:1 PIXELS",
+)
 
 # The raster label's font scale, in multiples of the chart's.
 _RASTER_LABEL_SCALE = 3
@@ -94,6 +110,79 @@ def zoom_edge(zoom: float, extent: int) -> int:
     """Where a centred zoom by ``zoom`` puts the frame's leading edge,
     in pixels from it along an axis ``extent`` long."""
     return round(extent * (1 - 1 / zoom) / 2)
+
+
+def _text_width(text: str, scale: int) -> int:
+    return (len(text) * _compose.ADVANCE - 1) * scale
+
+
+def _top_ladder_labels(
+    ladder: _compose.Block, height: int, rung: int, g: int
+) -> list[_compose.Label]:
+    """Each top-ladder rung's zoom, right of the rung and just below it,
+    so the label survives the crop that puts its rung on the edge."""
+    return [
+        _compose.Label(
+            ladder.x + ladder.width + 2 * g,
+            zoom_edge(zoom, height) + rung + 1,
+            f"{zoom:.2f}",
+            g,
+        )
+        for zoom in ZOOMS
+    ]
+
+
+def _left_ladder_labels(
+    ladder: _compose.Block, width: int, rung: int, g: int
+) -> list[_compose.Label]:
+    """Each left-ladder rung's zoom, below the ladder and just right of
+    the rung, in two staggered rows so neighbours do not collide."""
+    row_pitch = (_compose.GLYPH_HEIGHT + 2) * g
+    return [
+        _compose.Label(
+            zoom_edge(zoom, width) + rung + 1,
+            ladder.y + ladder.height + 2 * g + (index % 2) * row_pitch,
+            f"{zoom:.2f}",
+            g,
+        )
+        for index, zoom in enumerate(ZOOMS)
+    ]
+
+
+def _ruler_labels(ruler: _compose.Block, width: int, g: int) -> list[_compose.Label]:
+    """Below each horizontal-ruler tick, its scale over the raster width
+    that scale implies."""
+    row_pitch = (_compose.GLYPH_HEIGHT + 2) * g
+    labels = []
+    for scale in RULER_SCALES:
+        centre = ruler.x + ruler_position(scale, ruler.width)
+        for row, text in enumerate((f"{scale:.1f}", str(round(scale * width)))):
+            labels.append(
+                _compose.Label(
+                    centre - _text_width(text, g) // 2,
+                    ruler.y + ruler.height + 2 * g + row * row_pitch,
+                    text,
+                    g,
+                )
+            )
+    return labels
+
+
+def _vertical_ruler_labels(
+    ruler: _compose.Block, height: int, g: int
+) -> list[_compose.Label]:
+    """Right of each vertical-ruler tick, its scale and the raster height
+    that scale implies."""
+    labels = []
+    for scale in RULER_SCALES:
+        centre = ruler.y + ruler_position(scale, ruler.height)
+        x = ruler.x + ruler.width + 2 * g
+        for text in (f"{scale:.1f}", str(round(scale * height))):
+            labels.append(
+                _compose.Label(x, centre - _compose.GLYPH_HEIGHT * g // 2, text, g)
+            )
+            x += _text_width(text, g) + 6 * g
+    return labels
 
 
 @dataclass(frozen=True, eq=False)
@@ -130,12 +219,12 @@ class _Layout:
         g = _pixel_grid.text_scale_for(height)
         pad = 2 * g
         label_height = _compose.GLYPH_HEIGHT * g
-        rung_width = max(2, g)
+        rung_width = max(3, 2 * g)
         tick_width = min(g, 2)
         labels: list[_compose.Label] = []
 
-        def text_width(text: str, scale: int = g) -> int:
-            return (len(text) * _compose.ADVANCE - 1) * scale
+        def text_width(text: str) -> int:
+            return _text_width(text, g)
 
         # Zoom ladders.
         top_ladder = _compose.Block(
@@ -144,33 +233,14 @@ class _Layout:
             _px(_LADDER_LENGTH_X, width),
             zoom_edge(ZOOMS[-1], height) + rung_width,
         )
-        for zoom in ZOOMS:
-            labels.append(
-                _compose.Label(
-                    top_ladder.x + top_ladder.width + pad,
-                    zoom_edge(zoom, height) + rung_width + 1,
-                    f"{zoom:.2f}",
-                    g,
-                )
-            )
+        labels.extend(_top_ladder_labels(top_ladder, height, rung_width, g))
         left_ladder = _compose.Block(
             0,
             _px(_LADDER_LEFT_Y, height),
             zoom_edge(ZOOMS[-1], width) + rung_width,
             _px(_LADDER_LENGTH_Y, height),
         )
-        for index, zoom in enumerate(ZOOMS):
-            labels.append(
-                _compose.Label(
-                    zoom_edge(zoom, width) + rung_width + 1,
-                    left_ladder.y
-                    + left_ladder.height
-                    + pad
-                    + (index % 2) * (label_height + pad),
-                    f"{zoom:.2f}",
-                    g,
-                )
-            )
+        labels.extend(_left_ladder_labels(left_ladder, width, rung_width, g))
 
         # Horizontal beat ruler: comb labels in a column on its left.
         comb_label = text_width("1.00") + 2 * pad
@@ -257,17 +327,7 @@ class _Layout:
             ruler_right - ruler_left,
             ruler_tick + _px(_RULER_BAND_Y, height),
         )
-        for scale in RULER_SCALES:
-            centre = ruler.x + ruler_position(scale, ruler.width)
-            for row, text in enumerate((f"{scale:.1f}", str(round(scale * width)))):
-                labels.append(
-                    _compose.Label(
-                        centre - text_width(text) // 2,
-                        ruler.y + ruler.height + pad + row * (label_height + pad),
-                        text,
-                        g,
-                    )
-                )
+        labels.extend(_ruler_labels(ruler, width, g))
 
         # Vertical stripe ruler: ticks left of the sweep, labels right.
         vr_top, vr_bottom = (_px(y, height) for y in _VERTICAL_RULER_Y)
@@ -278,12 +338,27 @@ class _Layout:
             vertical_ruler_tick + _px(_VERTICAL_RULER_BAND_X, width),
             vr_bottom - vr_top,
         )
-        for scale in RULER_SCALES:
-            centre = vertical_ruler.y + ruler_position(scale, vertical_ruler.height)
-            x = vertical_ruler.x + vertical_ruler.width + pad
-            for text in (f"{scale:.1f}", str(round(scale * height))):
-                labels.append(_compose.Label(x, centre - label_height // 2, text, g))
-                x += text_width(text) + 3 * pad
+        labels.extend(_vertical_ruler_labels(vertical_ruler, height, g))
+
+        # A caption over each element, and the legend in the corner.
+        def caption(text: str, x: int, above: int) -> None:
+            labels.append(_compose.Label(x, above - label_height - pad, text, g))
+
+        labels.append(
+            _compose.Label(
+                top_ladder.x, top_ladder.y + top_ladder.height + pad, "ZOOM V", g
+            )
+        )
+        caption("ZOOM H", 0, left_ladder.y)
+        caption("UPSCALE H", strip.x, beat.y)
+        caption("UPSCALE V", vertical_beat.x, vertical_beat.y)
+        caption("PIXEL GRID", grid.block.x, grid.block.y)
+        caption("DOWNSCALE H", ruler.x, ruler.y)
+        caption("DOWNSCALE V", vertical_ruler.x, vertical_ruler.y)
+        for line, text in enumerate(LEGEND):
+            labels.append(
+                _compose.Label(pad, pad + line * (label_height + pad), text, g)
+            )
 
         return cls(
             text_scale=g,
@@ -469,12 +544,15 @@ def _mark_table(length: int, mark: int) -> np.ndarray:
     return marked
 
 
-def _ladder_block(lit: np.ndarray, length: int, xp: Any, device: Any) -> Any:
+def _ladder_block(
+    lit: np.ndarray, length: int, spine: int, xp: Any, device: Any
+) -> Any:
     """Rungs across a ``(len(lit), length)`` block: white rows where
-    ``lit``, grey between."""
-    rows = _backend.asarray(xp, lit, device)
-    line = _backend.full(xp, (1, length), _compose.WHITE, xp.float32, device)
-    return xp.where(rows[:, None], line, _compose.GREY)
+    ``lit``, joined by a white spine ``spine`` columns wide down the
+    block's leading edge, grey between."""
+    rows = _backend.asarray(xp, lit, device)[:, None]
+    cols = _backend.arange(xp, length, xp.int32, device)[None, :]
+    return xp.where(rows | (cols < spine), _compose.WHITE, _compose.GREY)
 
 
 def _beat_block(
@@ -563,8 +641,9 @@ def scale_chart(
         value = _compose.place(value, block, origin, rows, cols, xp)
 
     top, left = layout.top_ladder, layout.left_ladder
-    put(_ladder_block(layout.top_rungs, top.width, xp, device), top)
-    put(_ladder_block(layout.left_rungs, left.height, xp, device).T, left)
+    spine = layout.rung_width
+    put(_ladder_block(layout.top_rungs, top.width, spine, xp, device), top)
+    put(_ladder_block(layout.left_rungs, left.height, spine, xp, device).T, left)
 
     beat, strip = layout.beat, layout.strip
     put(

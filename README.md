@@ -104,6 +104,9 @@ from display_patterns import ScaleChartGeometry, scale_chart
 chart = scale_chart(ScaleChartGeometry.for_frame(width=3840, height=2160))
 ```
 
+Each element is captioned, and a legend in the top-left corner says how
+to read it:
+
 - **Upscale:** the one-pixel strip beside the combs breaks into bands.
   The comb whose ticks fall one per band reads the scale (1.02 to
   1.25). The bands give only the distance to a whole number, so 1.1x

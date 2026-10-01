@@ -98,6 +98,41 @@ class TestRender:
         assert {"0.1", "0.5", "0.9"} <= texts
         assert {"960", "540"} <= texts
 
+    def test_captions_every_element(self, geom: ScaleChartGeometry) -> None:
+        texts = {label.text for label in geom.labels}
+
+        assert {
+            "ZOOM V",
+            "ZOOM H",
+            "UPSCALE H",
+            "UPSCALE V",
+            "DOWNSCALE H",
+            "DOWNSCALE V",
+            "PIXEL GRID",
+        } <= texts
+
+    def test_a_legend_says_how_to_read_each_element(
+        self, geom: ScaleChartGeometry
+    ) -> None:
+        legend = [label.text for label in geom.labels if ":" in label.text]
+
+        for element in ("ZOOM", "UPSCALE", "DOWNSCALE", "GRID"):
+            assert any(line.startswith(f"{element}:") for line in legend)
+        assert any("1:1" in line for line in legend)
+
+    def test_ladder_rungs_hang_from_a_spine(
+        self, chart: np.ndarray, geom: ScaleChartGeometry
+    ) -> None:
+        """Each ladder's rungs join one lit spine, so the ladder reads as
+        one object, and its rungs are long enough to see."""
+        top = geom.top_ladder
+        assert (chart[: top.height, top.x, 0] == 1.0).all()
+        left = geom.left_ladder
+        assert (chart[left.y, : left.width, 0] == 1.0).all()
+        assert top.width >= WIDTH // 16
+        assert left.height >= HEIGHT // 16
+        assert geom.rung_width >= 3
+
     def test_labels_are_inked(
         self, chart: np.ndarray, geom: ScaleChartGeometry
     ) -> None:

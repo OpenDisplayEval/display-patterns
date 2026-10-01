@@ -36,6 +36,8 @@ from display_patterns.patterns._fills import (
     ColorRangeError,
     checkerboard,
 )
+from display_patterns.patterns._pixel_grid import PixelGridGeometry, pixel_grid
+from display_patterns.patterns._scale_chart import ScaleChartGeometry, scale_chart
 from display_patterns.patterns._zone_plate import (
     ZonePlateGeometry,
     ZonePlateScale,
@@ -47,11 +49,15 @@ __all__ = [
     "ROI",
     "ColorRangeError",
     "PanelGeometry",
+    "PixelGridGeometry",
+    "ScaleChartGeometry",
     "ZonePlateGeometry",
     "ZonePlateScale",
     "checkerboard",
     "decode_counter",
+    "pixel_grid",
     "render_counter_panel",
+    "scale_chart",
     "zone_plate",
     "zone_plate_scale",
 ]

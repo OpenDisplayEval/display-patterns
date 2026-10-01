@@ -4,7 +4,7 @@
 
 Test-pattern math tends to live trapped inside device tools. This
 library is the importable version: solid fields, checkerboards, zone
-plates, charts, and machine-readable temporal-alignment patterns, rendered as
+plates, scale charts, charts, and machine-readable temporal-alignment patterns, rendered as
 pure functions of their parameters and a frame index. Integer
 patterns deliver exact code values at a stated bit depth — the
 property measurement work depends on — and the render path never
@@ -95,6 +95,33 @@ An untouched chain reads 1.0 on both axes, and so does one that only
 enlarges the picture. Near half scale, a scaler with no antialiasing can
 read as `1 - s`, because there the fold lands on the plate itself.
 
+To read a chain's scaling by eye instead, render the scale chart into
+it and look at the output:
+
+```python
+from display_patterns import ScaleChartGeometry, scale_chart
+
+chart = scale_chart(ScaleChartGeometry.for_frame(width=3840, height=2160))
+```
+
+- **Upscale:** the one-pixel strip beside the combs breaks into bands.
+  The comb whose ticks fall one per band reads the scale (1.02 to
+  1.25). The bands give only the distance to a whole number, so 1.1x
+  and 1.9x look alike; a whole-number upscale shows no bands at all.
+  The raster label settles both, read against the output format.
+- **Zoom:** the outermost ladder rung left in the picture reads the
+  zoom: the top ladder for rows, the left one for columns.
+- **Downscale:** the stripe ruler's sweep goes to grey or moiré near
+  the tick for the chain's scale; a filtering scaler fades it over the
+  stretch before the tick. Each tick also names the raster that scale
+  implies.
+- **Detail:** the pixel grid shows what the scaler does to 1- to 8-pixel
+  checkers, stripes, diagonals and lines. `pixel_grid` renders the grid
+  on its own.
+
+View the output at 1:1. A monitor that scales the picture to fit adds
+its own scaling to the reading.
+
 ## Backends
 
 Every core pattern renders through the `xp` namespace with an optional
@@ -148,7 +175,9 @@ write_chart_tiff("my_chart.tiff", image, layout)
   the temporal-alignment counter panel (`PanelGeometry`,
   `render_counter_panel`, `decode_counter`), and the zone plate
   (`ZonePlateGeometry`, `zone_plate`, `zone_plate_scale`,
-  `ZonePlateScale`). The root is the canonical
+  `ZonePlateScale`), the pixel grid (`PixelGridGeometry`, `pixel_grid`),
+  and the scale chart (`ScaleChartGeometry`, `scale_chart`). The root
+  is the canonical
   import surface; no dependency beyond numpy — torch renders through
   the `xp` parameter without ever being required.
 - `display_patterns.image_generators` — legacy class surface

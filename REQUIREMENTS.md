@@ -60,9 +60,10 @@ caller's back cannot make a checkable radiometric claim.
   one end of a chain and decode captured frames at the other, so I can
   measure end-to-end latency and integer frame skew of a chain I do
   not control.
-- As a video-systems engineer, I display a zone plate into one end of a
-  chain and measure the capture at the other, so I can tell whether the
-  chain resamples the picture, and by how much on each axis.
+- As a video-systems engineer, I display a zone plate or scale chart
+  into one end of a chain and inspect or measure the output at the
+  other, so I can tell whether the chain resamples the picture, up or
+  down, and by how much on each axis.
 - As a real-time-pipeline developer, I render patterns frame by frame
   inside my own loop, on my own clock, into my own GPU tensors, so
   motion patterns cost me no playback machinery and no host round

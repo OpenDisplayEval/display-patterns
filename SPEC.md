@@ -122,6 +122,27 @@ The core catalog, renderable with numpy alone (§req:success-criteria):
   scale `s` from `1 - s`; whether the plate survived between the two
   decides, which is least certain near half scale for a scaler that
   does not filter.
+- **Pixel grid** — patches of checkers, stripes on each axis, both
+  diagonals, and isolated lines at cell sizes from 1 to 8 pixels, each
+  split into quadrants one pixel apart in phase, on a gutter at the
+  patches' mean grey. Read by eye: a scaler bands, softens, decimates,
+  or phase-shifts the patches, and the finest size that survives
+  intact bounds its scale (§req:user-stories).
+- **Scale chart** — a full frame for reading a chain's scaling by eye,
+  per axis, either side of 1:1. Beat rulers read an upscale: a
+  one-pixel stripe strip upscaled by `s` beats every
+  `1 / |s - round(s)|` source pixels, beside combs labelled with the
+  scale each period implies. Zoom ladders read a crop-and-enlarge as
+  the outermost labelled rung left in frame. Stripe rulers read a
+  downscale as the tick past which a sweep has gone to grey or moiré.
+  The chart also carries the pixel grid and names the raster it was
+  rendered at. **Why beats, not a blur threshold, for upscale:** a
+  clean upscale destroys no detail, so nothing fades; the one
+  output-space reference is the pixel grid, and one-pixel detail
+  beating against it is visible at normal viewing distance. The beat
+  gives only the distance from `s` to a whole number, so a whole-number
+  upscale shows no bands and reads from the raster label or the pixel
+  grid instead.
 
 The `charts` extra adds chart production (§req:user-stories): a chart
 is authored as a YAML patch list carrying colorimetric values,

@@ -67,6 +67,9 @@ packages = ["display_patterns"]
 
 [dependency-groups]
 dev = [
+    # The package's own optional features, so the tests that exercise them
+    # run on a plain `uv sync`; core-install still checks the bare package.
+    "display-patterns[charts,io]",
     "pyright>=1.1.403",
     "pytest>=8.4.1",
     "ruff>=0.12.3",

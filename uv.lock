@@ -47,6 +47,7 @@ io = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "display-patterns", extra = ["charts", "io"] },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
@@ -67,6 +68,7 @@ provides-extras = ["charts", "io"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "display-patterns", extras = ["charts", "io"] },
     { name = "pyright", specifier = ">=1.1.403" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "ruff", specifier = ">=0.12.3" },

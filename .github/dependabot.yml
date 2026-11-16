@@ -29,14 +29,9 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
-    # ruff and pyright bring new findings that need code edits, so they do
-    # not hold up the library bumps.
     groups:
-      python-lint:
-        patterns: ["ruff", "pyright"]
       python-packages:
         patterns: ["*"]
-        exclude-patterns: ["ruff", "pyright"]
     commit-message:
       prefix: "chore"
       include: "scope"
